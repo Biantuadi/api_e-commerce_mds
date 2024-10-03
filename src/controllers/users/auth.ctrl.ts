@@ -110,12 +110,8 @@ export default class AuthController {
 
   public async updateUserPassword(req: Request, res: Response): Promise<void> {
     try {
-      const userID = req.body.user.userID;  // Extract the userID from the token payload
+      const userID = req.body.user.userID;
       const { oldPassword, newPassword } = req.body;
-  
-      console.log('====================================');
-      console.log('userID:', userID);
-      console.log('====================================');
   
       const userRepository = getRepository(User);
   
