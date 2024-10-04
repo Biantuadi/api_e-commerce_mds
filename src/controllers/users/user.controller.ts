@@ -1,16 +1,13 @@
 import { Request, Response } from "express";
-import { getRepository } from "typeorm";
-import { User } from "../../entity/User";
+import UserService from "../../services/user.service"; // Importer le UserService
 import { UploadedFile } from "express-fileupload";
-import bcrypt from "bcrypt";
 
 export default class UserController {
   public async getMe(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req.body.user as { userID: string }).userID;
 
-      const userRepository = getRepository(User);
-      const user = await userRepository.findOne({ where: { id: userId } });  
+      const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(400).json({ message: "User not found" });
         return;
@@ -28,8 +25,7 @@ export default class UserController {
     try {
       const userId = req.params.id;
 
-      const userRepository = getRepository(User);
-      const user = await userRepository.findOne({ where: { id: userId } });  
+      const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(400).json({ message: "User not found" });
         return;
@@ -43,19 +39,12 @@ export default class UserController {
     }
   }
 
-
   public async getAll(req: Request, res: Response): Promise<void> {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = 10;
-      const skip = (page - 1) * limit;
 
-      const userRepository = getRepository(User);
-      const [users, totalCount] = await userRepository.findAndCount({
-        skip,
-        take: limit,
-      });
-
+      const [users, totalCount] = await UserService.findAllUsers(page, limit);
       const totalPages = Math.ceil(totalCount / limit);
       const usersWithoutPasswords = users.map(({ password, ...rest }) => rest);
 
@@ -88,12 +77,7 @@ export default class UserController {
       const base64Data = avatarFile.data.toString("base64");
       const base64Avatar = `data:${avatarFile.mimetype};base64,${base64Data}`;
 
-      const userRepository = getRepository(User);
-      await userRepository.update(
-        { id: userId },
-        { avatar: base64Avatar }
-      );
-
+      await UserService.uploadAvatar(userId, base64Avatar);
       res.status(200).json({ message: "Avatar uploaded successfully", avatar: base64Avatar });
     } catch (error: any) {
       console.error("An error occurred while uploading the avatar:", error);
@@ -106,20 +90,14 @@ export default class UserController {
       const userId = (req.body.user as { userID: string }).userID;
       const { password, ...userData } = req.body;  // Never update password directly
 
-      const userRepository = getRepository(User);
-      let user = await userRepository.findOne({ where: { id: userId } });  
-
+      const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
 
-      await userRepository.update(userId, userData);
-      user = await userRepository.findOne(
-        { where: { id: userId } }
-      );
-
-      const { password: _, ...userWithoutPassword } = user!;
+      const updatedUser = await UserService.updateUser(userId, userData);
+      const { password: _, ...userWithoutPassword } = updatedUser!;
       res.status(200).json({ message: "User updated successfully", user: userWithoutPassword });
     } catch (error: any) {
       console.error("An error occurred while updating user:", error);
@@ -129,7 +107,7 @@ export default class UserController {
 
   public async deleteUser(req: Request, res: Response): Promise<void> {
     try {
-      const userId:any = req.params.id;
+      const userId: any = req.params.id;
       const userPassword = req.body.password;
 
       if (!userId || !userPassword) {
@@ -137,21 +115,7 @@ export default class UserController {
         return;
       }
 
-      const userRepository = getRepository(User);
-      const user = await userRepository.findOne(userId);
-
-      if (!user) {
-        res.status(404).json({ message: "User not found" });
-        return;
-      }
-
-      const passwordMatch = await bcrypt.compare(userPassword, user.password);
-      if (!passwordMatch) {
-        res.status(400).json({ message: "Invalid password" });
-        return;
-      }
-
-      await userRepository.remove(user);
+      await UserService.deleteUser(userId, userPassword);
       res.status(200).json({ message: "User deleted successfully" });
     } catch (error: any) {
       console.error("An error occurred while deleting user:", error);
@@ -162,22 +126,20 @@ export default class UserController {
   public async updateUserToSeller(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.params.id;  // Get userId from route params
-      const userRepository = getRepository(User);
-  
-      const user = await userRepository.findOne({ where: { id: userId } });
+
+      const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
-  
+
       // Update the user's role to "seller"
-      await userRepository.update(userId, { role: "seller" });
-  
-      res.status(200).json({ message: "User updated to seller successfully", user });
+      const updatedUser = await UserService.updateUserRole(userId, "seller");
+
+      res.status(200).json({ message: "User updated to seller successfully", user: updatedUser });
     } catch (error: any) {
       console.error("Error updating user to seller:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
-  
 }

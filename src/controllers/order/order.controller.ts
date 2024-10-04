@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
-import { Order } from '../../entity/Order';
-import { User } from '../../entity/User';
-import { Product } from '../../entity/Product';
+import OrderService from '../../services/order.service';
+
+const orderService = new OrderService();
 
 export default class OrderController {
   
@@ -12,26 +11,20 @@ export default class OrderController {
       const { productIds, total_amount, shipping_address } = req.body;
       const userId = (req.body.user as { userID: string }).userID;
 
-      const userRepository = getRepository(User);
-      const orderRepository = getRepository(Order);
-
       // Find the user (buyer)
-      const user = await userRepository.findOne({ where: { id: userId } });
+      const user = await orderService.findUserById(userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
 
       // Create the new order
-      const newOrder = orderRepository.create({
-        user,
-        status: 'pending',  // Default status
+      const newOrder = await orderService.createOrder(user, {
         total_amount,
         shipping_address,
-        product_ids: productIds
+        product_ids: productIds,
       });
 
-      await orderRepository.save(newOrder);
       res.status(201).json({ message: "Order created successfully", order: newOrder });
     } catch (error: any) {
       console.error("Error creating order:", error);
@@ -44,12 +37,7 @@ export default class OrderController {
     try {
       const userId = (req.body.user as { userID: string }).userID;
 
-      const orderRepository = getRepository(Order);
-      const orders = await orderRepository.find({
-        where: { user: { id: userId } },
-        order: { createdAt: 'DESC' }
-      });
-
+      const orders = await orderService.findOrdersByUserId(userId);
       res.status(200).json(orders);
     } catch (error: any) {
       console.error("Error fetching orders:", error);
@@ -62,9 +50,7 @@ export default class OrderController {
     try {
       const orderId = req.params.id;
 
-      const orderRepository = getRepository(Order);
-      const order = await orderRepository.findOne({ where: { id: orderId } });
-
+      const order = await orderService.findOrderById(orderId);
       if (!order) {
         res.status(404).json({ message: "Order not found" });
         return;
@@ -83,18 +69,8 @@ export default class OrderController {
       const orderId = req.params.id;
       const { status } = req.body;
 
-      const orderRepository = getRepository(Order);
-      const order = await orderRepository.findOne({ where: { id: orderId } });
-
-      if (!order) {
-        res.status(404).json({ message: "Order not found" });
-        return;
-      }
-
-      order.status = status;
-      await orderRepository.save(order);
-
-      res.status(200).json({ message: "Order status updated successfully", order });
+      const updatedOrder = await orderService.updateOrderStatus(orderId, status);
+      res.status(200).json({ message: "Order status updated successfully", order: updatedOrder });
     } catch (error: any) {
       console.error("Error updating order status:", error);
       res.status(500).json({ message: "Internal server error" });
@@ -106,15 +82,7 @@ export default class OrderController {
     try {
       const orderId = req.params.id;
 
-      const orderRepository = getRepository(Order);
-      const order = await orderRepository.findOne({ where: { id: orderId } });
-
-      if (!order) {
-        res.status(404).json({ message: "Order not found" });
-        return;
-      }
-
-      await orderRepository.remove(order);
+      await orderService.deleteOrder(orderId);
       res.status(200).json({ message: "Order deleted successfully" });
     } catch (error: any) {
       console.error("Error deleting order:", error);

@@ -1,4 +1,4 @@
-import  AuthController  from '../../controllers/users/auth.ctrl';
+import  AuthController  from '../../controllers/auth/auth.ctrl';
 import {Router} from 'express';
 import AuthMiddleware from '../../middlewares/authMiddleware';
 

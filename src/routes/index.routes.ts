@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authRoutes } from './user/auth.routes';
+import { authRoutes } from './auth/auth.routes';
 import { userRoutes } from './user/user.routes';
 import { productRoutes } from './product/product.routes';
 import { cartRoutes } from './cart/cart.routes';
