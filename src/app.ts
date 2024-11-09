@@ -7,6 +7,9 @@ import config from './config/env.config';
 import router from './routes/index.routes';
 import dotenv from 'dotenv';
 import { connectToDatabase } from './config/db.config'; 
+import { Server } from 'socket.io';
+import { handleSocketConnection } from './sockets/index.socket';
+
 
 dotenv.config();
 
@@ -23,7 +26,15 @@ app.use(router);
 
 // Start the server
 const port = config.port || 3000;
-const httpServer = createServer(app);
+export const httpServer = createServer(app);
+
+ const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+});
+
+io.on('connection', handleSocketConnection);
 
 httpServer.listen(port, () => {
   console.log(`Server listening on port ${port}`);
@@ -38,3 +49,6 @@ httpServer.listen(port, () => {
 
     });
 });
+
+export default app;
+export { io };

@@ -5,12 +5,12 @@ import { User } from '../entity/User';
 export default class ProductService {
   public async getAllProducts() {
     const productRepository = getRepository(Product);
-    return await productRepository.find();
+    return productRepository.find();
   }
 
   public async getProductById(productId: string) {
     const productRepository = getRepository(Product);
-    return await productRepository.findOne({ where: { id: productId } });
+    return productRepository.findOne({ where: { id: productId } });
   }
 
   public async addProduct(productData: Partial<Product>, sellerId: string) {
@@ -27,7 +27,7 @@ export default class ProductService {
       seller,
     });
 
-    return await productRepository.save(newProduct);
+    return productRepository.save(newProduct);
   }
 
   public async updateProduct(productId: string, productData: Partial<Product>) {
@@ -39,7 +39,7 @@ export default class ProductService {
     }
 
     Object.assign(product, productData);
-    return await productRepository.save(product);
+    return productRepository.save(product);
   }
 
   public async deleteProduct(productId: string) {

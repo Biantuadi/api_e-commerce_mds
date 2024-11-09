@@ -12,7 +12,8 @@ export default class AuthService {
 
   public static async findUserByEmail(email: string) {
     const userRepository = getRepository(User);
-    return userRepository.findOne({ where: { email } });
+    const findedUser = userRepository.findOne({ where: { email: email } });
+    return findedUser;
   }
 
   // find user by id

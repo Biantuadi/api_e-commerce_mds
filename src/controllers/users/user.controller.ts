@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import UserService from "../../services/user.service"; // Importer le UserService
 import { UploadedFile } from "express-fileupload";
+import userCache from "../../cache/serCache";
 
 export default class UserController {
   public async getMe(req: Request, res: Response): Promise<void> {
@@ -43,17 +44,28 @@ export default class UserController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = 10;
-
+      
+      // Vérifie si les utilisateurs sont déjà en cache
+      const cachedUsers = userCache.get("allUsers");
+      if (cachedUsers) {
+        res.status(200).json(cachedUsers);
+      }
+  
       const [users, totalCount] = await UserService.findAllUsers(page, limit);
       const totalPages = Math.ceil(totalCount / limit);
       const usersWithoutPasswords = users.map(({ password, ...rest }) => rest);
-
-      res.status(200).json({
+  
+      const response = {
         users: usersWithoutPasswords,
         totalUsers: totalCount,
         currentPage: page,
         totalPages,
-      });
+      };
+  
+      // Enregistre les utilisateurs dans le cache
+      userCache.set("allUsers", response);
+  
+      res.status(200).json(response);
     } catch (error: any) {
       res.status(500).json(error);
     }
