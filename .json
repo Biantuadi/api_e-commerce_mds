@@ -1,0 +1,19 @@
+{
+  "id": "58953c62-1f45-476b-a44c-2818957356f9",
+  "createdAt": "2024-11-21T09:07:12.625Z",
+  "cartProducts": [
+    {
+      "id": "7f763037-7bed-4d59-822b-1e1223f590a1",
+      "quantity": 2,
+      "product": {
+        "id": "bd1bc410-1073-4fb1-9f57-bd1783d742e8",
+        "name": "2Vivre le carnaval au brezil ...",
+        "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla euismod, nisl vitae aliquam ultricies, nunc nisl ultricies nunc, vitae aliquam",
+        "price": "20",
+        "stock": 0,
+        "category": "",
+        "image": null
+      }
+    }
+  ]
+}

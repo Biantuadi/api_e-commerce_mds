@@ -13,13 +13,20 @@ export default class CartController {
       
       // Find the cart for the user (who acts as a buyer)
       const cart = await cartRepository.findOne({
-        where: { user: { id: userId } },  // Update to reference User instead of Buyer
-        relations: ['cartProducts', 'cartProducts.product']
+        where: { user: { id: userId } },
+        relations: ['cartProducts', 'cartProducts.product'],
       });
+      
+      
+      
 
       if (!cart) {
         res.status(404).json({ message: "Cart not found" });
         return;
+      }
+
+      if (cart) {
+        cart.cartProducts = cart.cartProducts.filter(cp => cp.quantity > 0);
       }
 
       res.status(200).json(cart);
@@ -33,6 +40,18 @@ export default class CartController {
     try {
       const { productId, quantity } = req.body;
       const userId = (req.body.user as { userID: string }).userID;  // Get the user ID from the token
+
+      // s'il n'y a pas de quantité ni de product id on renvois l'erreur
+      if (!productId) {
+        res.status(400).json({ message: "Product ID and quantity are required" });
+        return;
+        }
+
+        if ( !quantity || quantity <= 0) {
+          res.status(400).json({ message: "Quantity is required and must be greater than zero" });
+          return;
+        }
+        
 
       const productRepository = getRepository(Product);
       const cartRepository = getRepository(Cart);
@@ -63,16 +82,26 @@ export default class CartController {
 
       // Check if the product is already in the cart
       let cartProduct = await cartProductRepository.findOne({ where: { cart: { id: cart.id }, product: { id: product.id } } });
+
       if (cartProduct) {
-        // Update the quantity
+        if (quantity <= 0) {
+          // Option : Supprimer le produit du panier si quantité <= 0
+          await cartProductRepository.remove(cartProduct);
+          res.status(200).json({ message: "Product removed from cart due to zero quantity" });
+          return;
+        }
         cartProduct.quantity += quantity;
       } else {
-        // Add a new product to the cart
+        if (quantity <= 0) {
+          res.status(400).json({ message: "Cannot add product with zero quantity" });
+          return;
+        }
         cartProduct = cartProductRepository.create({ cart, product, quantity });
       }
+      
 
       await cartProductRepository.save(cartProduct);
-      res.status(201).json({ message: "Product added to cart", cartProduct });
+      res.status(201).json({ message: "Product added to cart" });
     } catch (error: any) {
       console.error("Error adding product to cart:", error);
       res.status(500).json({ message: "Internal server error" });

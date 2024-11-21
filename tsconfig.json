@@ -12,6 +12,6 @@
     "outDir": "./dist",
     "baseUrl": "./src"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "client/client.js"],
   "exclude": ["node_modules"]
 }

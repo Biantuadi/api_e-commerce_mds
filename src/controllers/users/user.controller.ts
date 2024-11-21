@@ -7,15 +7,29 @@ export default class UserController {
   public async getMe(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req.body.user as { userID: string }).userID;
-
+      
+      // Vérifie si l'utilisateur est dans le cache
+      const cachedUser = userCache.get(userId);
+      if (cachedUser) {
+        console.log("User found in cache:", cachedUser);
+         res.status(200).json(cachedUser); // Retourne l'utilisateur du cache
+         return;
+      }
+  
+      // Si l'utilisateur n'est pas en cache, on le récupère depuis la base de données
       const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(400).json({ message: "User not found" });
         return;
       }
-
+  
       const { password, ...userWithoutPassword } = user;
-      res.status(200).json(userWithoutPassword);
+  
+      // Stocke l'utilisateur dans le cache pour la prochaine fois
+      userCache.set(userId, userWithoutPassword);
+      console.log("User added to cache:", userWithoutPassword);
+  
+      res.status(200).json(userWithoutPassword); // Retourne l'utilisateur
     } catch (error: any) {
       console.error("An error occurred while processing the request:", error);
       res.status(500).json({ message: "An error occurred while processing the request" });
@@ -99,23 +113,29 @@ export default class UserController {
 
   public async updateUser(req: Request, res: Response): Promise<void> {
     try {
-      const userId = (req.body.user as { userID: string }).userID;
-      const { password, ...userData } = req.body;  // Never update password directly
-
+      const userId = req.params.id;
+      const { password, ...userData } = req.body;  // Ne jamais mettre à jour le mot de passe directement
+  
+      // Trouver l'utilisateur dans la base de données
       const user = await UserService.findUserById(userId);
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
       }
-
+  
+      // Appeler la méthode de mise à jour de l'utilisateur dans le service
       const updatedUser = await UserService.updateUser(userId, userData);
-      const { password: _, ...userWithoutPassword } = updatedUser!;
+  
+      // Masquer le mot de passe dans la réponse (si besoin)
+      const { password: _, ...userWithoutPassword } = updatedUser;
+  
       res.status(200).json({ message: "User updated successfully", user: userWithoutPassword });
     } catch (error: any) {
       console.error("An error occurred while updating user:", error);
       res.status(500).json({ message: "Internal server error" });
     }
   }
+  
 
   public async deleteUser(req: Request, res: Response): Promise<void> {
     try {
@@ -146,9 +166,9 @@ export default class UserController {
       }
 
       // Update the user's role to "seller"
-      const updatedUser = await UserService.updateUserRole(userId, "seller");
+      await UserService.updateUserRole(userId, "seller");
 
-      res.status(200).json({ message: "User updated to seller successfully", user: updatedUser });
+      res.status(200).json({ message: "User updated to seller successfully" });
     } catch (error: any) {
       console.error("Error updating user to seller:", error);
       res.status(500).json({ message: "Internal server error" });
