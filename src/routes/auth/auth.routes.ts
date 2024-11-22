@@ -9,10 +9,7 @@ const authController = new AuthController();
 authRoutes.post('/login', authController.login);
 authRoutes.post('/register', authController.signup);
 
-// update password
-authRoutes.put('/updatePassword', AuthMiddleware.isTokenValid, authController.updateUserPassword);
-
 // remove db
-authRoutes.delete('/deleteAll', AuthMiddleware.isTokenValid, authController.deleteAll);
+authRoutes.delete('/deleteAll', AuthMiddleware.isTokenValid, AuthMiddleware.isAdmin, authController.deleteAll);
 
 export {authRoutes};

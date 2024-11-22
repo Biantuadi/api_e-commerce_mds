@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { validationResult } from "express-validator";
-import AuthService from "../../services/auth.service";  // Import AuthService
+import AuthService from "../../services/auth.service"; // Import AuthService
 
 export default class AuthController {
-
   public async login(req: Request, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
@@ -29,7 +28,10 @@ export default class AuthController {
         return;
       }
 
-      const passwordMatch = await AuthService.validatePassword(password, user.password);
+      const passwordMatch = await AuthService.validatePassword(
+        password,
+        user.password
+      );
       if (!passwordMatch) {
         res.status(400).json({ message: "Invalid credentials" });
         return;
@@ -38,11 +40,14 @@ export default class AuthController {
       const token = AuthService.generateToken(user);
 
       // Exclure le mot de passe avant d'envoyer l'utilisateur
+
       const { password: _, ...userToSend } = user;
       res.status(200).json({ user: userToSend, token });
     } catch (error: any) {
       console.error("An error occurred while processing the request:", error);
-      res.status(500).json({ message: "An error occurred while processing the request" });
+      res
+        .status(500)
+        .json({ message: "An error occurred while processing the request" });
     }
   }
 
@@ -76,7 +81,7 @@ export default class AuthController {
         lastname,
         email: transformedEmail,
         password: hashedPassword,
-        role: "buyer",  // Default role
+        role: "buyer", // Default role
         createdAt: new Date(),
       });
 
@@ -87,35 +92,6 @@ export default class AuthController {
     } catch (error: any) {
       console.error("Error creating user:", error);
       res.status(500).json({ message: "Internal server error" });
-    }
-  }
-
-  public async updateUserPassword(req: Request, res: Response): Promise<void> {
-    try {
-      const userID = req.body.user.userID;
-      const { oldPassword, newPassword } = req.body;
-
-      const user = await AuthService.findUserById(userID);
-
-      if (!user) {
-        res.status(404).json({ message: "User not found" });
-        return;
-      }
-
-      const passwordMatch = await AuthService.validatePassword(oldPassword, user.password);
-      if (!passwordMatch) {
-        res.status(400).json({ message: "Invalid old password" });
-        return;
-      }
-
-      const hashedNewPassword = await AuthService.hashPassword(newPassword);
-      user.password = hashedNewPassword;
-      await AuthService.createUser(user);  // Update user
-
-      res.status(200).json({ message: "Password updated successfully" });
-    } catch (error: any) {
-      console.error("An error occurred while updating password:", error);
-      res.status(500).json({ message: "An error occurred while updating password" });
     }
   }
 
